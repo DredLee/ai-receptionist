@@ -23,3 +23,12 @@ app.get("/", (req, res) => {
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
+app.get("/voice", (req, res) => {
+  res.type("text/xml");
+
+  res.send(`
+<Response>
+<Say>Hello. Thank you for calling. Please hold while our AI receptionist assists you.</Say>
+</Response>
+`);
+});
