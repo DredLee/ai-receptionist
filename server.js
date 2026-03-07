@@ -9,7 +9,9 @@ function handleVoice(req, res) {
 
   res.send(`
 <Response>
-<Say>Hello. Thank you for calling. Please hold while our AI receptionist assists you.</Say>
+<Gather input="speech" action="/process-speech" method="POST">
+<Say>Hello. Thank you for calling. How can I help you today?</Say>
+</Gather>
 </Response>
 `);
 }
