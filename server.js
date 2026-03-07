@@ -16,6 +16,18 @@ function handleVoice(req, res) {
 `);
 }
 
+app.post("/process-speech", (req, res) => {
+  const speech = req.body.SpeechResult || "I didn't catch that";
+
+  res.type("text/xml");
+
+  res.send(`
+<Response>
+<Say>You said: ${speech}</Say>
+</Response>
+`);
+});
+
 app.post("/voice", handleVoice);
 app.get("/voice", handleVoice);
 
