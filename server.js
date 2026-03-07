@@ -1,19 +1,22 @@
 const express = require("express");
 const bodyParser = require("body-parser");
+const OpenAI = require("openai");
 
 const app = express();
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+});
+
 const PORT = process.env.PORT || 10000;
 
-// Root route (for testing server)
 app.get("/", (req, res) => {
   res.send("AI Receptionist Server Running");
 });
 
-// Twilio voice webhook
 app.post("/voice", (req, res) => {
   res.type("text/xml");
 
@@ -22,24 +25,47 @@ app.post("/voice", (req, res) => {
 <Gather input="speech" action="/process-speech" method="POST" timeout="5">
 <Say>Hello. Thank you for calling. How can I help you today?</Say>
 </Gather>
-<Say>Sorry, I didn't hear anything. Are you still there.</Say>
 </Response>
 `);
 });
 
-// Process caller speech
-app.post("/process-speech", (req, res) => {
+app.post("/process-speech", async (req, res) => {
+
   const speech = req.body.SpeechResult || "I didn't catch that";
+
+  let aiReply = "I'm sorry, something went wrong.";
+
+  try {
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content: "You are a friendly AI receptionist for a business. Keep answers short and helpful."
+        },
+        {
+          role: "user",
+          content: speech
+        }
+      ]
+    });
+
+    aiReply = completion.choices[0].message.content;
+
+  } catch (error) {
+    console.error(error);
+  }
 
   res.type("text/xml");
 
   res.send(`
 <Response>
-<Say>You said: ${speech}</Say>
+<Say>${aiReply}</Say>
 </Response>
 `);
 });
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-});;
+});
