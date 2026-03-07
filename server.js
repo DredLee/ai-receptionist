@@ -22,7 +22,7 @@ app.post("/voice", (req, res) => {
 <Gather input="speech" action="/process-speech" method="POST" timeout="5">
 <Say>Hello. Thank you for calling. How can I help you today?</Say>
 </Gather>
-<Say>Sorry, I didn't hear anything. Please call again.</Say>
+<Say>Sorry, I didn't hear anything. Are you still there.</Say>
 </Response>
 `);
 });
