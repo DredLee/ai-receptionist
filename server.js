@@ -1,22 +1,34 @@
 const express = require("express");
+const bodyParser = require("body-parser");
+
 const app = express();
-const port = process.env.PORT || 3000;
 
-app.use(express.urlencoded({ extended: true }));
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
 
-function handleVoice(req, res) {
+const PORT = process.env.PORT || 10000;
+
+// Root route (for testing server)
+app.get("/", (req, res) => {
+  res.send("AI Receptionist Server Running");
+});
+
+// Twilio voice webhook
+app.post("/voice", (req, res) => {
   res.type("text/xml");
 
   res.send(`
 <Response>
-<Gather input="speech" action="/process-speech" method="POST">
+<Gather input="speech" action="/process-speech" method="POST" timeout="5">
 <Say>Hello. Thank you for calling. How can I help you today?</Say>
 </Gather>
+<Say>Sorry, I didn't hear anything. Please call again.</Say>
 </Response>
 `);
-}
+});
 
-app.all("/process-speech", (req, res) => {
+// Process caller speech
+app.post("/process-speech", (req, res) => {
   const speech = req.body.SpeechResult || "I didn't catch that";
 
   res.type("text/xml");
@@ -28,13 +40,6 @@ app.all("/process-speech", (req, res) => {
 `);
 });
 
-app.post("/voice", handleVoice);
-app.get("/voice", handleVoice);
-
-app.all("/", (req, res) => {
-  res.send("AI Receptionist Server Running");
-});
-
-app.listen(port, () => {
-  console.log("Server running on port " + port);
-});
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});;
