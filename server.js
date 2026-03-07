@@ -16,7 +16,7 @@ function handleVoice(req, res) {
 `);
 }
 
-app.post("/process-speech", (req, res) => {
+app.all("/process-speech", (req, res) => {
   const speech = req.body.SpeechResult || "I didn't catch that";
 
   res.type("text/xml");
@@ -31,7 +31,7 @@ app.post("/process-speech", (req, res) => {
 app.post("/voice", handleVoice);
 app.get("/voice", handleVoice);
 
-app.get("/", (req, res) => {
+app.all("/", (req, res) => {
   res.send("AI Receptionist Server Running");
 });
 
