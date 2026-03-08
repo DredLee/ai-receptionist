@@ -54,8 +54,9 @@ app.post("/process-speech", async (req, res) => {
     aiReply = completion.choices[0].message.content;
 
   } catch (error) {
-    console.error(error);
-  }
+  console.error("OPENAI FULL ERROR:", error);
+  console.error("OPENAI MESSAGE:", error.message);
+}
 
   res.type("text/xml");
 
