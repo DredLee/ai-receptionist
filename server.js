@@ -62,6 +62,9 @@ app.post("/process-speech", async (req, res) => {
   res.send(`
 <Response>
 <Say>${aiReply}</Say>
+<Gather input="speech" action="/process-speech" method="POST">
+<Say>Is there anything else I can help you with?</Say>
+</Gather>
 </Response>
 `);
 });
