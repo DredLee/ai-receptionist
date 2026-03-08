@@ -32,13 +32,13 @@ app.post("/voice", (req, res) => {
 app.post("/process-speech", async (req, res) => {
 
   const speech = req.body.SpeechResult || "I didn't catch that";
-
+console.log("Caller said:", req.body.SpeechResult);
   let aiReply = "Sorry, something went wrong.";
 
   try {
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-4o",
       messages: [
         {
           role: "system",
