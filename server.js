@@ -35,21 +35,19 @@ app.post("/process-speech", async (req, res) => {
 console.log("Caller said:", req.body.SpeechResult);
   let aiReply = "Sorry, something went wrong.";
 
-  try {
-
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: "You are a professional AI receptionist. Be friendly, concise, and helpful."
-        },
-        {
-          role: "user",
-          content: speech
-        }
-      ]
-    });
+  const completion = await openai.chat.completions.create({
+  model: "gpt-4o",
+  messages: [
+    {
+      role: "system",
+      content: "You are a friendly business receptionist. Keep responses under 20 words."
+    },
+    {
+      role: "user",
+      content: speech
+    }
+  ]
+});
 
     aiReply = completion.choices[0].message.content;
 
