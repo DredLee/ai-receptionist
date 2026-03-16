@@ -29,7 +29,7 @@ function systemPrompt() {
     content: `
 You are the receptionist for Endor.
 
-Approved business facts:
+Approved facts:
 - Business name: Endor
 - Location: Toronto
 - Hours: Monday to Friday, 9:00 AM to 5:00 PM
@@ -38,32 +38,32 @@ Approved business facts:
 - Same-day bookings are allowed
 
 Rules:
-- Never invent services, addresses, industries, or locations.
-- Never mention New York, Tech City, IT services, software development, digital marketing, or data analytics.
+- Never invent services, industries, addresses, or locations.
 - If you do not know the answer, say:
   "I’m sorry, I don’t have that information. Management will call you back to address that question."
 - If needed, collect the caller's name, email address, and phone number.
-- Keep responses short and natural.
+- Keep responses short.
 `
   };
 }
 
-function getHardcodedAnswer(speech) {
-  const text = speech.toLowerCase();
+function getExactBusinessReply(speech) {
+  const text = (speech || "").toLowerCase().trim();
 
   if (
+    text.includes("hours") ||
     text.includes("hour") ||
     text.includes("open") ||
-    text.includes("close") ||
-    text.includes("business hours")
+    text.includes("close")
   ) {
     return "We are open Monday to Friday from 9:00 AM to 5:00 PM.";
   }
 
   if (
-    text.includes("where are you") ||
     text.includes("location") ||
     text.includes("located") ||
+    text.includes("where are you") ||
+    text.includes("where you're located") ||
     text.includes("address")
   ) {
     return "We are based in Toronto.";
@@ -73,15 +73,16 @@ function getHardcodedAnswer(speech) {
     text.includes("services") ||
     text.includes("what do you offer") ||
     text.includes("what do you do") ||
-    text.includes("offer")
+    text === "offer" ||
+    text.includes("service")
   ) {
     return "We offer AI voice agents and AI receptionists.";
   }
 
   if (
-    text.includes("appointment") ||
     text.includes("book") ||
     text.includes("booking") ||
+    text.includes("appointment") ||
     text.includes("schedule")
   ) {
     return "Same-day bookings are allowed. What day and time would you prefer?";
@@ -90,15 +91,28 @@ function getHardcodedAnswer(speech) {
   return null;
 }
 
+function sendVoiceResponse(res, reply) {
+  const safeReply = escapeXml(reply);
+
+  res.type("text/xml");
+  res.send(`
+<Response>
+  <Say>${safeReply}</Say>
+  <Gather input="speech" action="/process-speech" method="POST" timeout="5" speechTimeout="auto">
+    <Say>Is there anything else I can help you with?</Say>
+  </Gather>
+  <Say>Thank you for calling Endor. Goodbye.</Say>
+</Response>
+`);
+}
+
 app.get("/", (req, res) => {
   res.send("AI Receptionist Server Running");
 });
 
 function handleVoice(req, res) {
   const callSid = req.body.CallSid || req.query.CallSid || "unknown";
-
   conversations[callSid] = [systemPrompt()];
-
   console.log("New call started:", callSid);
 
   res.type("text/xml");
@@ -117,71 +131,59 @@ app.post("/voice", handleVoice);
 
 app.post("/process-speech", async (req, res) => {
   const callSid = req.body.CallSid || "unknown";
-  const speech = req.body.SpeechResult || "I didn't catch that";
+  const speech = req.body.SpeechResult || "";
 
   console.log("CallSid:", callSid);
   console.log("Caller said:", speech);
 
-  let aiReply = getHardcodedAnswer(speech);
+  const exactReply = getExactBusinessReply(speech);
 
-  if (!aiReply) {
-    if (!conversations[callSid]) {
-      conversations[callSid] = [systemPrompt()];
-    }
-
-    conversations[callSid].push({
-      role: "user",
-      content: speech
-    });
-
-    aiReply = "I’m sorry, I don’t have that information. Management will call you back to address that question.";
-
-    try {
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4o",
-        temperature: 0.1,
-        messages: conversations[callSid]
-      });
-
-      aiReply =
-        completion.choices &&
-        completion.choices[0] &&
-        completion.choices[0].message &&
-        completion.choices[0].message.content
-          ? completion.choices[0].message.content
-          : aiReply;
-
-      conversations[callSid].push({
-        role: "assistant",
-        content: aiReply
-      });
-
-      if (conversations[callSid].length > 12) {
-        const systemMessage = conversations[callSid][0];
-        const recentMessages = conversations[callSid].slice(-10);
-        conversations[callSid] = [systemMessage, ...recentMessages];
-      }
-    } catch (error) {
-      console.error("OPENAI STATUS:", error.status);
-      console.error("OPENAI CODE:", error.code);
-      console.error("OPENAI MESSAGE:", error.message);
-    }
+  // IMPORTANT: never call OpenAI for core business facts
+  if (exactReply) {
+    console.log("Using exact business reply:", exactReply);
+    return sendVoiceResponse(res, exactReply);
   }
 
-  aiReply = escapeXml(aiReply);
+  if (!conversations[callSid]) {
+    conversations[callSid] = [systemPrompt()];
+  }
 
-  res.type("text/xml");
-  res.send(`
-<Response>
-  <Say>${aiReply}</Say>
-  <Gather input="speech" action="/process-speech" method="POST" timeout="5" speechTimeout="auto">
-    <Say>Is there anything else I can help you with?</Say>
-  </Gather>
-  <Say>Thank you for calling Endor. Goodbye.</Say>
-</Response>
-`);
+  conversations[callSid].push({
+    role: "user",
+    content: speech
+  });
+
+  let aiReply =
+    "I’m sorry, I don’t have that information. Management will call you back to address that question.";
+
+  try {
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o",
+      temperature: 0.1,
+      messages: conversations[callSid]
+    });
+
+    aiReply =
+      completion.choices &&
+      completion.choices[0] &&
+      completion.choices[0].message &&
+      completion.choices[0].message.content
+        ? completion.choices[0].message.content
+        : aiReply;
+
+    conversations[callSid].push({
+      role: "assistant",
+      content: aiReply
+    });
+  } catch (error) {
+    console.error("OPENAI STATUS:", error.status);
+    console.error("OPENAI CODE:", error.code);
+    console.error("OPENAI MESSAGE:", error.message);
+  }
+
+  return sendVoiceResponse(res, aiReply);
 });
 
 app.listen(PORT, () => {
-  console.log(\`Server running on port \${PORT}\`);
+  console.log(`Server running on port ${PORT}`);
 });
