@@ -1,4 +1,4 @@
- const express = require("express");
+const express = require("express");
 const bodyParser = require("body-parser");
 
 const app = express();
@@ -59,10 +59,6 @@ app.post("/process-speech", (req, res) => {
   </Gather>
 </Response>
 `);
-});
-
-app.listen(PORT, () => {
-  console.log(`ENDOR VERSION TEST 7 running on port ${PORT}`);
 });
 
 app.listen(PORT, () => {
