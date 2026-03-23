@@ -9,121 +9,27 @@ app.use(bodyParser.json());
 const PORT = process.env.PORT || 10000;
 
 app.get("/", (req, res) => {
-  res.send("ENDOR RECEPTIONIST LIVE");
+  res.send("GOODBYE TEST LIVE");
 });
 
-function escapeXml(text = "") {
-  return String(text)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&apos;");
-}
-
-function respond(res, message) {
-  const safeMessage = escapeXml(message);
-
+app.get("/voice", (req, res) => {
   res.type("text/xml");
   res.send(`
 <Response>
-  <Say>${safeMessage}</Say>
-  <Gather
-    input="speech"
-    action="/process-speech"
-    method="POST"
-    timeout="5"
-    speechTimeout="auto"
-    actionOnEmptyResult="true">
-    <Say>Is there anything else I can help you with?</Say>
-  </Gather>
+  <Say>This is a goodbye test.</Say>
+  <Pause length="1"/>
+  <Say>Thank you for calling Endor. Goodbye.</Say>
+  <Pause length="2"/>
+  <Hangup/>
 </Response>
 `);
-}
-
-function handleVoice(req, res) {
-  res.type("text/xml");
-  res.send(`
-<Response>
-  <Gather
-    input="speech"
-    action="/process-speech"
-    method="POST"
-    timeout="5"
-    speechTimeout="auto"
-    actionOnEmptyResult="true">
-    <Say>Hello, thank you for calling Endor. How can I help you today?</Say>
-  </Gather>
-</Response>
-`);
-}
-
-app.get("/voice", handleVoice);
-app.post("/voice", handleVoice);
-
-app.post("/process-speech", (req, res) => {
-  const speech = (req.body.SpeechResult || "").toLowerCase().trim();
-
-  console.log("Caller said:", speech);
-
-  if (!speech) {
-    res.type("text/xml");
-    return res.send(`
-<Response>
-  <Redirect method="POST">/goodbye</Redirect>
-</Response>
-`);
-  }
-
-  if (
-    speech.includes("hours") ||
-    speech.includes("hour") ||
-    speech.includes("open") ||
-    speech.includes("close")
-  ) {
-    return respond(res, "We are open Monday to Friday from 9 AM to 5 PM.");
-  }
-
-  if (
-    speech.includes("service") ||
-    speech.includes("services") ||
-    speech.includes("offer") ||
-    speech.includes("what do you do")
-  ) {
-    return respond(res, "We offer AI voice agents and AI receptionists.");
-  }
-
-  if (
-    speech.includes("location") ||
-    speech.includes("located") ||
-    speech.includes("where are you") ||
-    speech.includes("address")
-  ) {
-    return respond(res, "We are based in Toronto.");
-  }
-
-  if (
-    speech.includes("appointment") ||
-    speech.includes("book") ||
-    speech.includes("booking") ||
-    speech.includes("schedule")
-  ) {
-    return respond(
-      res,
-      "Appointments are not required, and same day bookings are allowed. May I have your name, email address, and phone number?"
-    );
-  }
-
-  return respond(
-    res,
-    "I do not have that information. Management will call you back to address that question. May I have your name, email address, and phone number?"
-  );
 });
 
-app.post("/goodbye", (req, res) => {
+app.post("/voice", (req, res) => {
   res.type("text/xml");
   res.send(`
 <Response>
+  <Say>This is a goodbye test.</Say>
   <Pause length="1"/>
   <Say>Thank you for calling Endor. Goodbye.</Say>
   <Pause length="2"/>
@@ -133,5 +39,5 @@ app.post("/goodbye", (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`ENDOR RECEPTIONIST LIVE on port ${PORT}`);
+  console.log(`GOODBYE TEST LIVE on port ${PORT}`);
 });
