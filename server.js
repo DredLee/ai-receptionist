@@ -12,15 +12,25 @@ app.get("/", (req, res) => {
   res.send("ENDOR RECEPTIONIST LIVE");
 });
 
+function sendGoodbye(res) {
+  res.type("text/xml");
+  res.send(`
+<Response>
+  <Say>Thank you for calling Endor. Goodbye.</Say>
+  <Pause length="2"/>
+  <Hangup/>
+</Response>
+`);
+}
+
 function respond(res, message) {
   res.type("text/xml");
   res.send(`
 <Response>
   <Say>${message}</Say>
-  <Gather input="speech" action="/process-speech" method="POST" timeout="5" speechTimeout="auto">
+  <Gather input="speech" action="/process-speech" method="POST" timeout="5" speechTimeout="auto" actionOnEmptyResult="true">
     <Say>Is there anything else I can help you with?</Say>
   </Gather>
-  <Redirect method="POST">/goodbye</Redirect>
 </Response>
 `);
 }
@@ -29,10 +39,9 @@ function handleVoice(req, res) {
   res.type("text/xml");
   res.send(`
 <Response>
-  <Gather input="speech" action="/process-speech" method="POST" timeout="5" speechTimeout="auto">
+  <Gather input="speech" action="/process-speech" method="POST" timeout="5" speechTimeout="auto" actionOnEmptyResult="true">
     <Say>Hello, thank you for calling Endor. How can I help you today?</Say>
   </Gather>
-  <Redirect method="POST">/goodbye</Redirect>
 </Response>
 `);
 }
@@ -44,6 +53,11 @@ app.post("/process-speech", (req, res) => {
   const speech = (req.body.SpeechResult || "").toLowerCase().trim();
 
   console.log("Caller said:", speech);
+
+  // If caller says nothing, say goodbye and hang up
+  if (!speech) {
+    return sendGoodbye(res);
+  }
 
   if (
     speech.includes("hours") ||
@@ -88,21 +102,6 @@ app.post("/process-speech", (req, res) => {
     res,
     "I do not have that information. Management will call you back to address that question. May I have your name, email address, and phone number?"
   );
-});
-
-app.post("/goodbye", (req, res) => {
-  res.type("text/xml");
-  res.send(`
-<Response>
-  <Say>Thank you for calling Endor. Goodbye.</Say>
-  <Pause length="1"/>
-  <Hangup/>
-</Response>
-`);
-});
-
-app.listen(PORT, () => {
-  console.log(`ENDOR RECEPTIONIST LIVE on port ${PORT}`);
 });
 
 app.listen(PORT, () => {
