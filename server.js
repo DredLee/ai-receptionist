@@ -95,9 +95,14 @@ app.post("/goodbye", (req, res) => {
   res.send(`
 <Response>
   <Say>Thank you for calling Endor. Goodbye.</Say>
+  <Pause length="1"/>
   <Hangup/>
 </Response>
 `);
+});
+
+app.listen(PORT, () => {
+  console.log(`ENDOR RECEPTIONIST LIVE on port ${PORT}`);
 });
 
 app.listen(PORT, () => {
