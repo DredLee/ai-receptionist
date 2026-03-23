@@ -28,12 +28,15 @@ function respond(res, message) {
   res.send(`
 <Response>
   <Say>${safeMessage}</Say>
-  <Gather input="speech" action="/process-speech" method="POST" timeout="5" speechTimeout="auto">
+  <Gather
+    input="speech"
+    action="/process-speech"
+    method="POST"
+    timeout="5"
+    speechTimeout="auto"
+    actionOnEmptyResult="true">
     <Say>Is there anything else I can help you with?</Say>
   </Gather>
-  <Say>Thank you for calling Endor. Goodbye.</Say>
-  <Pause length="1"/>
-  <Hangup/>
 </Response>
 `);
 }
@@ -42,12 +45,15 @@ function handleVoice(req, res) {
   res.type("text/xml");
   res.send(`
 <Response>
-  <Gather input="speech" action="/process-speech" method="POST" timeout="5" speechTimeout="auto">
+  <Gather
+    input="speech"
+    action="/process-speech"
+    method="POST"
+    timeout="5"
+    speechTimeout="auto"
+    actionOnEmptyResult="true">
     <Say>Hello, thank you for calling Endor. How can I help you today?</Say>
   </Gather>
-  <Say>Thank you for calling Endor. Goodbye.</Say>
-  <Pause length="1"/>
-  <Hangup/>
 </Response>
 `);
 }
@@ -59,6 +65,15 @@ app.post("/process-speech", (req, res) => {
   const speech = (req.body.SpeechResult || "").toLowerCase().trim();
 
   console.log("Caller said:", speech);
+
+  if (!speech) {
+    res.type("text/xml");
+    return res.send(`
+<Response>
+  <Redirect method="POST">/goodbye</Redirect>
+</Response>
+`);
+  }
 
   if (
     speech.includes("hours") ||
@@ -103,6 +118,18 @@ app.post("/process-speech", (req, res) => {
     res,
     "I do not have that information. Management will call you back to address that question. May I have your name, email address, and phone number?"
   );
+});
+
+app.post("/goodbye", (req, res) => {
+  res.type("text/xml");
+  res.send(`
+<Response>
+  <Pause length="1"/>
+  <Say>Thank you for calling Endor. Goodbye.</Say>
+  <Pause length="2"/>
+  <Hangup/>
+</Response>
+`);
 });
 
 app.listen(PORT, () => {
