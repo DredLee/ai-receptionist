@@ -12,15 +12,18 @@ app.get("/", (req, res) => {
   res.send("ENDOR RECEPTIONIST LIVE");
 });
 
-app.post("/goodbye", (req, res) => {
+function respond(res, message) {
   res.type("text/xml");
   res.send(`
 <Response>
-  <Say>Thank you for calling Endor. Goodbye.</Say>
-  <Hangup/>
+  <Say>${message}</Say>
+  <Gather input="speech" action="/process-speech" method="POST" timeout="5" speechTimeout="auto">
+    <Say>Is there anything else I can help you with?</Say>
+  </Gather>
+  <Redirect method="POST">/goodbye</Redirect>
 </Response>
 `);
-});
+}
 
 function handleVoice(req, res) {
   res.type("text/xml");
@@ -29,7 +32,7 @@ function handleVoice(req, res) {
   <Gather input="speech" action="/process-speech" method="POST" timeout="5" speechTimeout="auto">
     <Say>Hello, thank you for calling Endor. How can I help you today?</Say>
   </Gather>
-  <Say>Sorry, I didn't hear anything. Please call again.</Say>
+  <Redirect method="POST">/goodbye</Redirect>
 </Response>
 `);
 }
@@ -75,7 +78,10 @@ app.post("/process-speech", (req, res) => {
     speech.includes("booking") ||
     speech.includes("schedule")
   ) {
-    return respond(res, "Appointments are not required, and same day bookings are allowed. May I have your name, email address, and phone number?");
+    return respond(
+      res,
+      "Appointments are not required, and same day bookings are allowed. May I have your name, email address, and phone number?"
+    );
   }
 
   return respond(
@@ -84,10 +90,16 @@ app.post("/process-speech", (req, res) => {
   );
 });
 
-app.listen(PORT, () => {
-  console.log(`ENDOR RECEPTIONIST LIVE on port ${PORT}`);
+app.post("/goodbye", (req, res) => {
+  res.type("text/xml");
+  res.send(`
+<Response>
+  <Say>Thank you for calling Endor. Goodbye.</Say>
+  <Hangup/>
+</Response>
+`);
 });
 
 app.listen(PORT, () => {
-  console.log(`ENDOR VERSION TEST 7 running on port ${PORT}`);
+  console.log(`ENDOR RECEPTIONIST LIVE on port ${PORT}`);
 });
