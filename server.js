@@ -12,25 +12,28 @@ app.get("/", (req, res) => {
   res.send("ENDOR RECEPTIONIST LIVE");
 });
 
-function sendGoodbye(res) {
-  res.type("text/xml");
-  res.send(`
-<Response>
-  <Say>Thank you for calling Endor. Goodbye.</Say>
-  <Pause length="2"/>
-  <Hangup/>
-</Response>
-`);
+function escapeXml(text = "") {
+  return String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
 }
 
 function respond(res, message) {
+  const safeMessage = escapeXml(message);
+
   res.type("text/xml");
   res.send(`
 <Response>
-  <Say>${message}</Say>
-  <Gather input="speech" action="/process-speech" method="POST" timeout="5" speechTimeout="auto" actionOnEmptyResult="true">
+  <Say>${safeMessage}</Say>
+  <Gather input="speech" action="/process-speech" method="POST" timeout="5" speechTimeout="auto">
     <Say>Is there anything else I can help you with?</Say>
   </Gather>
+  <Say>Thank you for calling Endor. Goodbye.</Say>
+  <Pause length="1"/>
+  <Hangup/>
 </Response>
 `);
 }
@@ -39,9 +42,12 @@ function handleVoice(req, res) {
   res.type("text/xml");
   res.send(`
 <Response>
-  <Gather input="speech" action="/process-speech" method="POST" timeout="5" speechTimeout="auto" actionOnEmptyResult="true">
+  <Gather input="speech" action="/process-speech" method="POST" timeout="5" speechTimeout="auto">
     <Say>Hello, thank you for calling Endor. How can I help you today?</Say>
   </Gather>
+  <Say>Thank you for calling Endor. Goodbye.</Say>
+  <Pause length="1"/>
+  <Hangup/>
 </Response>
 `);
 }
@@ -53,11 +59,6 @@ app.post("/process-speech", (req, res) => {
   const speech = (req.body.SpeechResult || "").toLowerCase().trim();
 
   console.log("Caller said:", speech);
-
-  // If caller says nothing, say goodbye and hang up
-  if (!speech) {
-    return sendGoodbye(res);
-  }
 
   if (
     speech.includes("hours") ||
