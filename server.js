@@ -21,6 +21,7 @@ function respond(res, message) {
     <Say>Is there anything else I can help you with?</Say>
   </Gather>
   <Say>Thank you for calling Endor. Goodbye.</Say>
+  <Hangup/>
 </Response>
 `);
 }
